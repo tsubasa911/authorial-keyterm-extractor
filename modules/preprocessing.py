@@ -12,7 +12,6 @@ def load_spacy_model():
         nlp = spacy.load("en_core_web_sm")
         return nlp
     except Exception as e:
-        # モデルがロードできない場合はエラーメッセージを表示
         st.error(f"SpaCyモデル 'en_core_web_sm' のロード中にエラーが発生しました: {e}")
         st.stop()
 
@@ -27,6 +26,23 @@ def preprocess_text(text):
     doc = nlp(text)
 
     processed_tokens = []
-    # ... (既存の処理ロジック)
+
+    for token in doc:
+        # 基本的なノイズ除去条件
+        if (
+            not token.is_punct
+            and not token.is_space
+            and not token.like_num
+            and token.is_alpha
+        ):
+            # ストップワードの除去（ただし動詞は除外しない）
+            if token.is_stop and token.pos_ != "VERB":
+                continue
+
+            processed_tokens.append({
+                "lemma": token.lemma_,
+                "pos": token.pos_,
+                "text": token.text
+            })
 
     return processed_tokens
