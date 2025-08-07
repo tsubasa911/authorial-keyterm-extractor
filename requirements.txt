@@ -1,13 +1,9 @@
-# requirements.txt
-streamlit>=1.30.0
-spacy>=3.7.0
-# spacyモデルを直接指定
-https://github.com/explosion/spacy-models/releases/download/en_core_web_sm-3.7.1/en_core_web_sm-3.7.1-py3-none-any.whl
-nltk>=3.8.1
-scikit-learn>=1.4.0
-matplotlib>=3.8.0
-plotly>=5.18.0
-wordcloud>=1.9.3
-kaleido>=0.2.1
-pandas>=2.2.0
-numpy>=1.26.0
+streamlit
+spacy
+scikit-learn
+matplotlib
+plotly
+wordcloud
+pandas
+nltk
+en-core-web-sm @ https://github.com/explosion/spacy-models/releases/download/en_core_web_sm-3.7.1/en_core_web_sm-3.7.1.tar.gz

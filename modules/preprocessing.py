@@ -1,22 +1,6 @@
-# modules/preprocessing.py
-
 import spacy
-import streamlit as st
 
-@st.cache_resource
-def load_spacy_model():
-    """
-    spacyモデルをロードする関数。
-    """
-    try:
-        nlp = spacy.load("en_core_web_sm")
-        return nlp
-    except Exception as e:
-        st.error(f"SpaCyモデル 'en_core_web_sm' のロード中にエラーが発生しました: {e}")
-        st.stop()
-
-# アプリの起動時にモデルをロード
-nlp = load_spacy_model()
+nlp = spacy.load("en_core_web_sm")
 
 def preprocess_text(text):
     """
