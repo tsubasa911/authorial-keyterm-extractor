@@ -1,0 +1,23 @@
+# Streamlit アプリケーション本体
+streamlit>=1.30.0
+
+# 自然言語処理
+spacy>=3.7.0
+nltk>=3.8.1
+scikit-learn>=1.4.0
+
+# 可視化ライブラリ
+matplotlib>=3.8.0
+plotly>=5.18.0
+wordcloud>=1.9.3
+kaleido>=0.2.1   # plotly のPNG出力に必要
+
+# データ処理
+pandas>=2.2.0
+
+# その他
+numpy>=1.26.0
+
+# モデル（spaCy）
+# インストール後、別途以下のコマンドでモデルを取得：
+# python -m spacy download en_core_web_sm

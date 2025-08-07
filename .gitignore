@@ -1,0 +1,4 @@
+# .gitignore に追記する内容
+.venv/
+__pycache__/
+outputs/
