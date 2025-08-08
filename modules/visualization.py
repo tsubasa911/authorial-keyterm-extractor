@@ -1,61 +1,99 @@
-import plotly.express as px
-import pandas as pd
-from wordcloud import WordCloud
-import matplotlib.pyplot as plt
+# modules/visualization.py
 from io import BytesIO
 
-def generate_bubble_chart(df: pd.DataFrame):
+def _resolve_cols(df):
     """
-    TF-IDFスコア、頻度、文字数、品詞に基づくバブルチャートを生成。
-    dfには以下の列が必要: ['単語', 'TF-IDFスコア', '頻度', '品詞']
+    言語に依存しないよう、使用カラム名を解決する。
+    優先順は日本語→英語。存在しない場合は KeyError を投げる。
     """
-    df = df.copy()
-    df["文字数"] = df["単語"].apply(len)
+    def pick(*candidates):
+        for c in candidates:
+            if c in df.columns:
+                return c
+        raise KeyError(f"Expected one of {candidates} in DataFrame columns: {list(df.columns)}")
+
+    term_col   = pick("単語", "Term")
+    tfidf_col  = pick("TF-IDFスコア", "TF-IDF Score")
+    freq_col   = pick("頻度", "Frequency")
+    pos_col    = pick("品詞", "POS")
+    return term_col, tfidf_col, freq_col, pos_col
+
+
+def generate_bubble_chart(df):
+    """
+    バブル: x=TF-IDF, y=Frequency, size=文字数, color=POS
+    言語（日本語/英語）どちらのカラムでも動作する。
+    """
+    import plotly.express as px
+
+    term_col, tfidf_col, freq_col, pos_col = _resolve_cols(df)
+
+    tmp = df.copy()
+    # 長さは内部専用カラムとして追加（列名を固定しない）
+    tmp["_len_chars"] = tmp[term_col].astype(str).str.len()
 
     fig = px.scatter(
-        df,
-        x="TF-IDFスコア",
-        y="頻度",
-        size="文字数",
-        color="品詞",
-        hover_name="単語",
-        size_max=40,
-        title="バブルチャート：特徴語の可視化",
+        tmp,
+        x=tfidf_col,
+        y=freq_col,
+        size="_len_chars",
+        color=pos_col,
+        hover_name=term_col,
+        size_max=48,
     )
+    # 軽いレイアウト調整（UIは変えない：軸や凡例の存在・構成はそのまま）
+    fig.update_layout(margin=dict(l=10, r=10, t=10, b=10))
     return fig
 
-
-# modules/visualization.py に追加
 
 def generate_wordcloud(df):
     """
-    TF-IDFスコアに基づくワードクラウド画像を返す。
-    df: '単語' と 'TF-IDFスコア' を含む DataFrame
+    Word Cloud: 重みは TF-IDF を使用。言語非依存カラム対応。
     """
-    tfidf_dict = dict(zip(df["単語"], df["TF-IDFスコア"]))
+    from wordcloud import WordCloud
+    import matplotlib.pyplot as plt
 
-    # ワードクラウド生成
-    wc = WordCloud(
-        width=800,
-        height=400,
-        background_color="white",
-        colormap="Dark2"
-    ).generate_from_frequencies(tfidf_dict)
+    term_col, tfidf_col, _, _ = _resolve_cols(df)
 
-    # matplotlibのFigureを返す
-    fig, ax = plt.subplots(figsize=(10, 5))
-    ax.imshow(wc, interpolation="bilinear")
-    ax.axis("off")
+    # NaN/空文字を除外しつつ dict を作成
+    freqs = {}
+    for _, row in df.iterrows():
+        term = str(row[term_col]).strip()
+        if not term:
+            continue
+        try:
+            score = float(row[tfidf_col])
+        except Exception:
+            continue
+        # score<=0 は無視（必要なら）
+        if score > 0:
+            freqs[term] = score
+
+    wc = WordCloud(width=1200, height=600, background_color="white")
+    wc.generate_from_frequencies(freqs)
+
+    fig = plt.figure()
+    plt.imshow(wc, interpolation="bilinear")
+    plt.axis("off")
     return fig
 
+
 def export_matplotlib_figure_to_png(fig):
+    """
+    matplotlib Figure -> PNG bytes
+    """
+    import matplotlib.pyplot as plt
     buf = BytesIO()
-    fig.savefig(buf, format="png", bbox_inches='tight')
+    fig.savefig(buf, format="png", bbox_inches="tight", dpi=200)
+    plt.close(fig)
     buf.seek(0)
-    return buf
+    return buf.getvalue()
+
 
 def export_plotly_figure_to_png(fig):
-    buf = BytesIO()
-    fig.write_image(buf, format="png", engine="kaleido")
-    buf.seek(0)
-    return buf
+    """
+    plotly Figure -> PNG bytes（kaleido使用）
+    """
+    # to_image は kaleido が必要。requirements に kaleido を含めておくこと。
+    png_bytes = fig.to_image(format="png", scale=2)
+    return png_bytes
